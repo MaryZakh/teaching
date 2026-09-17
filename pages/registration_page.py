@@ -1,7 +1,5 @@
 from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 
 from pages.base_page import BasePage
 
@@ -37,9 +35,7 @@ class RegistrationPage(BasePage):
 
     def is_registered(self):
         try:
-            WebDriverWait(self.driver,timeout=5).until(
-                EC.visibility_of_element_located(self.SIGN_OUT_BTN)
-            )
+            self.wait_until_visible(self.SIGN_OUT_BTN)
             return True
         except TimeoutException:
             return False

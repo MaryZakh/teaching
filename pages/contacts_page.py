@@ -1,9 +1,6 @@
-import time
 import logging
 
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
 
 from pages.base_page import BasePage
 
@@ -22,13 +19,11 @@ class ContactsPage(BasePage):
     EDIT_DESCRIPTION_INPUT = (By.CSS_SELECTOR, "input[placeholder='desc']")
     EDIT_SAVE_BTN = (By.XPATH, "//button[text()='Save']")
     REMOVE_BTN = (By.XPATH,"//button[text()='Remove']")
+    DETAIL_CARD = (By.XPATH, "//button[text()='Edit']/..")
 
     def open_contacts_list(self):
-        # Переходит на страницу /contacts по ссылке в навигации и ждёт смены
-        # URL плюс небольшую паузу, чтобы список карточек успел отрисоваться
         self.click(self.CONTACTS_NAV_LINK)
-        WebDriverWait(self.driver, 5).until(EC.url_contains("/contacts"))
-        time.sleep(1)
+        self.wait_until_url_matches(r"/contacts$")
 
     def contact_cards_count(self, phone):
         # Считает, сколько карточек контактов с данным телефоном сейчас
@@ -43,9 +38,7 @@ class ContactsPage(BasePage):
         # видима на странице — используется сразу после сохранения контакта,
         # чтобы убедиться, что он реально появился в списке.
         locator = (By.XPATH, f"//h3[text()='{phone}']")
-        element = WebDriverWait(self.driver, 5).until(
-            EC.presence_of_element_located(locator))
-        return element.is_displayed()
+        return self.wait_until_visible(locator).is_displayed()
 
 
 
@@ -63,10 +56,18 @@ class ContactsPage(BasePage):
     def set_edit_field(self, locator,value):
         self.fill(locator,value)
 
-    def submit_edit(self):
+    def submit_edit(self, expect_text=None):
         logger.info("Submiting contact edit")
         self.click(self.EDIT_SAVE_BTN)
-        time.sleep(3)
+        # После Save приложение остается на карточке контакта (/contacts/<id>),
+        # а не возвращается на список (/contacts).
+        self.wait_until_url_matches(r"/contacts/\d+$")
+        if expect_text:
+            # Карточка контакта обновляется с задержкой относительно смены URL,
+            # поэтому дожидаемся отредактированного значения именно в ней.
+            self.wait_until_text_in_element(self.DETAIL_CARD, expect_text)
+
+
 
     def contact_name_for_phone(self,phone):
         card = self.driver.find_element(By.XPATH, f"//h3[text()='{phone}']/..")
@@ -79,7 +80,7 @@ class ContactsPage(BasePage):
     def remove_current_contact(self):
         logger.info("Deleting contact")
         self.click(self.REMOVE_BTN)
-        time.sleep(2)
+        self.wait_until_url_matches(r"/contacts$")
 
     def open_first_contact(self):
         cards = self.driver.find_elements(*self.CONTACT_CARDS)

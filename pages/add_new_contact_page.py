@@ -1,4 +1,3 @@
-import time
 import logging
 
 from selenium.webdriver.common.by import By
@@ -79,7 +78,7 @@ class ContactPage(BasePage):
         self.open_contact_form()
         self.fill_contact_form(contact)
         self.submit_contact()
-        time.sleep(3)
+        self.wait_until_url_matches(r"/contacts$")
 
 
 
